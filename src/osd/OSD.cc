@@ -6794,17 +6794,23 @@ void OSD::_committed_osd_maps(epoch_t first, epoch_t last, MOSDMap *m)
       }
     }
 
-    if (osdmap->test_flag(CEPH_OSDMAP_NOUP) &&
-	!newmap->test_flag(CEPH_OSDMAP_NOUP)) {
-      dout(10) << __func__ << " NOUP flag cleared in " << newmap->get_epoch()
-	       << dendl;
-      if (is_booting()) {
+    if (is_booting()) {
+      if (osdmap->test_flag(CEPH_OSDMAP_NOUP) &&
+	  !newmap->test_flag(CEPH_OSDMAP_NOUP)) {
+	dout(10) << __func__ << " NOUP flag cleared in " << newmap->get_epoch()
+		 << dendl;
 	// this captures the case where we sent the boot message while
 	// NOUP was being set on the mon and our boot request was
 	// dropped, and then later it is cleared.  it imperfectly
 	// handles the case where our original boot message was not
 	// dropped and we restart even though we might have booted, but
 	// that is harmless (boot will just take slightly longer).
+	do_restart = true;
+      }
+      if (!osdmap->test_flag(CEPH_OSDMAP_NOUP) &&
+	  newmap->test_flag(CEPH_OSDMAP_NOUP)) {
+	dout(10) << __func__ << " NOUP flag set in " << newmap->get_epoch()
+		 << dendl;
 	do_restart = true;
       }
     }
