@@ -31,9 +31,9 @@ public:
   int factory(CompressorRef *cs,
                       std::ostream *ss) override
   {
-    if (compressor == 0) {
-      ZstdCompressor *interface = new ZstdCompressor(cct);
-      compressor = CompressorRef(interface);
+    if (!compressor) {
+      auto level = cct->_conf.get_val<int64_t>("compressor_zstd_level");
+      compressor.reset(new ZstdCompressor(level));
     }
     *cs = compressor;
     return 0;

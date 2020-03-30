@@ -23,13 +23,14 @@
 #include "compressor/Compressor.h"
 
 class ZstdCompressor : public Compressor {
-  CephContext *const cct;
  public:
-  ZstdCompressor(CephContext *cct) : Compressor(COMP_ALG_ZSTD, "zstd"), cct(cct) {}
+  ZstdCompressor(int compression_level)
+    : Compressor(COMP_ALG_ZSTD, "zstd"),
+      compression_level(compression_level) {}
 
   int compress(const bufferlist &src, bufferlist &dst) override {
     ZSTD_CStream *s = ZSTD_createCStream();
-    ZSTD_initCStream_srcSize(s, cct->_conf->compressor_zstd_level, src.length());
+    ZSTD_initCStream_srcSize(s, compression_level, src.length());
     auto p = src.begin();
     size_t left = src.length();
 
@@ -100,6 +101,8 @@ class ZstdCompressor : public Compressor {
     dst.append(dstptr, 0, outbuf.pos);
     return 0;
   }
+private:
+  const int compression_level;
 };
 
 #endif
